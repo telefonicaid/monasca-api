@@ -62,6 +62,9 @@ class Metrics(metrics_api_v2.MetricsV2API):
                 'metrics')
             self._metrics_repo = simport.load(
                 cfg.CONF.repositories.metrics_driver)()
+            if cfg.CONF.forwarding:
+                self._metrics_forward = simport.load(
+                    cfg.CONF.forwarding.driver)()
 
         except Exception as ex:
             LOG.exception(ex)
@@ -97,6 +100,9 @@ class Metrics(metrics_api_v2.MetricsV2API):
             LOG.exception(ex)
             raise falcon.HTTPServiceUnavailable('Service unavailable',
                                                 ex.message, 60)
+
+        if cfg.CONF.forwarding:
+            self._metrics_forward.send_message_batch(metrics)
 
     @resource.resource_try_catch_block
     def _list_metrics(self, tenant_id, name, dimensions, req_uri, offset,
